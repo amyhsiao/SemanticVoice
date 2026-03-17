@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Quality Analyzer</title>
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --background-color: #f8f9fa;
+            --surface-color: #ffffff;
+            --border-color: #dee2e6;
+            --text-color: #212529;
+            --text-muted-color: #6c757d;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            --border-radius: 8px;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        header {
+            background-color: var(--surface-color);
+            box-shadow: var(--shadow);
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        header .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        header h1 {
+            font-size: 1.2rem;
+            margin: 0 0 0 1rem;
+            font-weight: 500;
+        }
+
+        main {
+            flex-grow: 1;
+            padding: 2rem;
+            display: grid;
+            gap: 2rem;
+            grid-template-columns: 1fr;
+        }
+
+        .section-container {
+            background-color: var(--surface-color);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 1.5rem;
+        }
+
+        /* Workspace Section */
+        #workspace {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+
+        .upload-zone {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 500;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        .btn-danger {
+            background-color: var(--danger-color);
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+        .btn:disabled {
+            background-color: #e9ecef;
+            color: var(--text-muted-color);
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        #waveform-container {
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            background: #fdfdfd;
+        }
+        #waveform { height: 150px; }
+
+        .controls-bar {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .gender-switch { display: flex; overflow: hidden; border-radius: var(--border-radius); border: 1px solid var(--border-color); }
+        .gender-switch input { display: none; }
+        .gender-switch label { background-color: #e9ecef; color: var(--text-muted-color); padding: 8px 16px; cursor: pointer; transition: background-color 0.2s; }
+        .gender-switch input:checked + label { background-color: var(--primary-color); color: white; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1); }
+
+        /* Quality Checklist */
+        #qc-checklist {
+            display: none; /* Initially hidden */
+            padding: 1rem;
+            background-color: #f8f9fa;
+        }
+        #qc-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        #qc-list li { padding: 5px 10px; border-radius: 4px; font-size: 0.9rem; transition: all 0.3s ease; }
+        #qc-list li::before { font-weight: bold; margin-right: 0.5em; }
+        #qc-list li.pending::before { content: '▫'; }
+        #qc-list li.passed::before { content: '✔'; color: var(--success-color); }
+        #qc-list li.failed::before { content: '✖'; color: var(--danger-color); }
+
+
+        /* Action Zone */
+        #action-zone {
+            text-align: center;
+            padding: 2rem 0;
+        }
+        #analyzeButton {
+            width: 100%;
+            max-width: 400px;
+            font-size: 1.25rem;
+            padding: 1rem 2rem;
+        }
+        #progress-bar-container {
+            max-width: 400px;
+            height: 8px;
+            background-color: #e9ecef;
+            border-radius: 4px;
+            margin: 1rem auto 0;
+            overflow: hidden;
+            display: none; /* Hidden by default */
+        }
+        #progress-bar {
+            width: 0;
+            height: 100%;
+            background-color: var(--primary-color);
+            transition: width 0.3s ease;
+        }
+        #progress-text {
+             margin-top: 1rem;
+             font-weight: 500;
+             color: var(--text-muted-color);
+        }
+
+        /* Results Dashboard */
+        #results-dashboard {
+            display: none; /* Hidden until analysis is complete */
+            gap: 1.5rem;
+        }
+        .dashboard-title {
+            font-size: 1.5rem;
+            font-weight: 500;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 0.5rem;
+        }
+        #summary-card summary.dashboard-title {
+            cursor: pointer;
+            list-style: none;
+            position: relative;
+            padding-left: 1.5rem;
+            border-bottom: none; /* Override border for summary */
+        }
+        #summary-card summary.dashboard-title::-webkit-details-marker {
+            display: none;
+        }
+        #summary-card summary.dashboard-title::before {
+            content: '+';
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+        }
+        #summary-card details[open] > summary.dashboard-title::before {
+            content: '−';
+        }
+        #summary-card details[open] > summary.dashboard-title {
+            margin-bottom: 1rem;
+        }
+        #summary-card pre {
+            background-color: #f8f9fa;
+            border: 1px solid var(--border-color);
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .visualization-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+        .chart-container {
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 0.5rem;
+            background: #fff;
+            min-height: 220px;
+        }
+
+        /* Modal */
+        .modal {
+            display: none; position: fixed; z-index: 1000; left: 0; top: 0;
+            width: 100%; height: 100%; overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+            align-items: center; justify-content: center;
+        }
+        .modal.active { display: flex; }
+        .modal-content {
+            background-color: var(--surface-color);
+            padding: 2rem;
+            border-radius: var(--border-radius);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 800px;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; }
+        .modal-header h2 { margin: 0; font-size: 1.5rem; }
+        .modal-header .close { font-size: 2rem; font-weight: bold; cursor: pointer; color: var(--text-muted-color); }
+        .modal-header .close:hover { color: var(--text-color); }
+        .modal-body {
+            border-top: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1.5rem 0;
+        }
+        .modal-footer { display: flex; justify-content: flex-end; gap: 1rem; }
+
+        #trim-waveform { height: 128px; }
+
+        /* Helpers */
+        .hidden { display: none; }
+        input[type="file"] {
+            border: 1px solid var(--border-color);
+            padding: 0.5rem;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+        }
+
+        /* Responsive */
+        @media (min-width: 768px) {
+            #workspace {
+                grid-template-areas:
+                    "upload upload"
+                    "waveform quality"
+                    "controls quality";
+                grid-template-columns: 3fr 1fr;
+            }
+            .upload-zone { grid-area: upload; }
+            #waveform-container { grid-area: waveform; }
+            .controls-bar { grid-area: controls; justify-content: flex-start; }
+            #qc-checklist { grid-area: quality; display: block; padding: 1.5rem; }
+            #qc-list { flex-direction: column; }
+        }
+
+        @media (min-width: 1024px) {
+            .visualization-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">VQA</div>
+        <h1>Voice Quality Analyzer</h1>
+    </header>
+
+    <main>
+        <!-- SECTION: Workspace -->
+        <section id="workspace" class="section-container">
+            <div class="upload-zone">
+                <input type="file" id="audioInput" accept=".wav,.mp3,.webm,.m4a" class="hidden">
+                <button class="btn btn-primary" onclick="document.getElementById('audioInput').click();">Upload Audio</button>
+                <button id="recordButton" class="btn">Record Mic</button>
+                <span id="audioFileName" style="margin-left: 10px; font-weight: bold;"></span>
+            </div>
+
+            <div id="waveform-container">
+                <div id="waveform"></div>
+            </div>
+
+            <div class="controls-bar">
+                <button id="playPauseButton" class="btn" disabled>Play/Pause</button>
+                <button id="trimButton" class="btn" disabled>Trim Audio</button>
+                <button id="revertButton" class="btn hidden">Revert</button>
+                <div class="gender-switch">
+                    <input type="radio" id="male" name="gender" value="male" checked>
+                    <label for="male">Male</label>
+                    <input type="radio" id="female" name="gender" value="female">
+                    <label for="female">Female</label>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-left: 1rem;">
+                    <input type="checkbox" id="ignoreLimit">
+                    <label for="ignoreLimit" style="font-size: 0.9rem; color: var(--text-muted-color); cursor: pointer;">Ignore 30s Limit</label>
+                </div>
+            </div>
+
+            <div id="qc-checklist">
+                <h4>Quality Checklist</h4>
+                <ul id="qc-list">
+                    <li id="qc-Basic-Silence-Check" class="pending">Basic Silence Check</li>
+                    <li id="qc-Duration-Check" class="pending">Duration Check</li>
+                    <li id="qc-Quietness-Check" class="pending">Quietness Check</li>
+                    <li id="qc-Clipping-Detection" class="pending">Clipping Detection</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- SECTION: Action Zone -->
+        <section id="action-zone">
+            <button id="analyzeButton" class="btn btn-primary" disabled>Analyze</button>
+            <p id="progress-text"></p>
+            <div id="progress-bar-container">
+                <div id="progress-bar"></div>
+            </div>
+        </section>
+
+        <!-- SECTION: Results Dashboard -->
+        <section id="results-dashboard" class="section-container">
+            <div id="summary-card">
+             <details>
+                <summary class="dashboard-title">Raw Data</summary>
+                <pre id="results">Analysis results will appear here...</pre>
+             </details>
+        </div>
+            <div class="visualization-grid">
+                <div>
+                    <h3 class="dashboard-title">Voice Profile</h3>
+                    <div id="radarCharts" class="chart-grid">
+                        <!-- Radar chart placeholders will be injected by JS -->
+                    </div>
+                </div>
+                <div>
+                    <h3 class="dashboard-title">Acoustic Metrics</h3>
+                    <div id="acousticGauges" class="chart-grid">
+                        <!-- Gauge chart placeholders will be injected by JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- COMPONENT: Modals -->
+    <div id="recordModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Record Audio</h2>
+                <span class="close" id="closeRecord">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p>Recording Time: <span id="timer">0.0</span>s <span id="limit-info">(Max 30s)</span></p>
+            </div>
+            <div class="modal-footer">
+                <button id="toggleRecordButton" class="btn btn-primary">Start</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="trimModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Trim Audio</h2>
+                <span class="close" id="closeTrim">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p>Drag the edges of the region to adjust. The highlighted area will be analyzed.</p>
+                <div id="trim-waveform"></div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancelTrim" class="btn">Cancel</button>
+                <button id="confirmAndAnalyze" class="btn btn-primary">Confirm</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Scripts -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script type="module">
+        import WaveSurfer from 'https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.esm.js';
+        import RegionsPlugin from 'https://unpkg.com/wavesurfer.js@7/dist/plugins/regions.js';
+
+        let adjectiveGroups = {}, acousticNorms = {};
+        let wavesurfer = null, trimWavesurfer = null;
+        let mediaRecorder, audioChunks = [], timerInterval, startTime;
+        let currentAudioBlob = null;
+        let originalAudioBlob = null;
+        let activeRegion = null;
+
+        const recordModal = document.getElementById('recordModal');
+        const trimModal = document.getElementById('trimModal');
+        const recordButton = document.getElementById('recordButton');
+        const trimButton = document.getElementById('trimButton');
+        const analyzeButton = document.getElementById('analyzeButton');
+        const playPauseButton = document.getElementById('playPauseButton');
+        const audioInput = document.getElementById('audioInput');
+        const resultsDashboard = document.getElementById('results-dashboard');
+
+        audioInput.onchange = () => {
+            const file = audioInput.files[0];
+            if (file) loadNewAudio(file, file.name);
+        };
+
+        analyzeButton.onclick = () => submitAudioData(currentAudioBlob);
+
+        const revertButton = document.getElementById('revertButton');
+        revertButton.onclick = () => {
+            if (originalAudioBlob) {
+                _updatePlayerUI(originalAudioBlob, originalAudioBlob.name);
+            }
+        };
+
+        playPauseButton.onclick = () => {
+            if (wavesurfer) wavesurfer.playPause();
+        }
+
+        window.onload = async () => {
+            try {
+                [adjectiveGroups, acousticNorms] = await Promise.all([
+                    (await fetch('/adjectives')).json(),
+                    (await (await fetch('/acoustic_norms')).json()).acoustic_norms
+                ]);
+            } catch (error) { console.error("Error fetching data:", error); }
+        };
+
+        function setupModal(modal, openBtn, closeBtnId, cancelBtnId) {
+            const closeBtn = document.getElementById(closeBtnId);
+            openBtn.onclick = () => modal.classList.add('active');
+            closeBtn.onclick = () => modal.classList.remove('active');
+            if (cancelBtnId) {
+                document.getElementById(cancelBtnId).onclick = () => modal.classList.remove('active');
+            }
+            window.addEventListener('click', (event) => {
+                if (event.target == modal) modal.classList.remove('active');
+            });
+        }
+
+        setupModal(recordModal, recordButton, 'closeRecord');
+        recordButton.addEventListener('click', () => {
+            const ignoreLimit = document.getElementById('ignoreLimit').checked;
+            document.getElementById('limit-info').textContent = ignoreLimit ? '(Unlimited)' : '(Max 30s)';
+        });
+        setupModal(trimModal, trimButton, 'closeTrim', 'cancelTrim');
+
+        // --- Recording Logic ---
+        let isRecording = false;
+        const toggleRecordButton = document.getElementById('toggleRecordButton');
+
+        toggleRecordButton.onclick = async () => {
+            if (!isRecording) {
+                // --- Start Recording ---
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+                    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                    mediaRecorder.onstop = () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                                            loadNewAudio(audioBlob, "recorded_audio.wav");
+                                            recordModal.classList.remove('active');
+                                            stream.getTracks().forEach(track => track.stop());
+                                            
+                                            // Automatically open the trim modal
+                                            setTimeout(() => document.getElementById('trimButton').click(), 100);
+                                        };                    mediaRecorder.start();
+
+                    isRecording = true;
+                    toggleRecordButton.textContent = 'Stop';
+                    toggleRecordButton.classList.remove('btn-primary');
+                    toggleRecordButton.classList.add('btn-danger');
+                    
+                    startTime = Date.now();
+                    timerInterval = setInterval(() => {
+                        const seconds = ((Date.now() - startTime) / 1000).toFixed(1);
+                        document.getElementById('timer').textContent = seconds;
+                        const ignoreLimit = document.getElementById('ignoreLimit').checked;
+                        if (!ignoreLimit && seconds >= 30) {
+                            toggleRecordButton.click(); // Auto-click stop at 30s
+                        }
+                    }, 100);
+
+                } catch (err) {
+                    alert('Error accessing microphone: ' + err.message);
+                }
+            } else {
+                // --- Stop Recording ---
+                if (((Date.now() - startTime) / 1000) < 0.5) {
+                    return alert("Recording must be at least 0.5 seconds.");
+                }
+                mediaRecorder.stop();
+                clearInterval(timerInterval);
+
+                isRecording = false;
+                toggleRecordButton.textContent = 'Start';
+                toggleRecordButton.classList.remove('btn-danger');
+                toggleRecordButton.classList.add('btn-primary');
+                document.getElementById('timer').textContent = '0.0';
+            }
+        };
+
+        // --- Main Audio Handling ---
+        function loadNewAudio(blob, fileName) {
+            try {
+                originalAudioBlob = new Blob([blob], {type: blob.type});
+                originalAudioBlob.name = "original_" + fileName;
+                _updatePlayerUI(blob, fileName);
+            } catch (e) {
+                const progressText = document.getElementById('progress-text');
+                progressText.textContent = `An error occurred: ${e.message}`;
+                progressText.style.color = 'red';
+            }
+        }
+        
+        function _updatePlayerUI(blob, fileName) {
+            currentAudioBlob = new Blob([blob], {type: blob.type});
+            currentAudioBlob.name = fileName;
+            
+            document.getElementById('audioFileName').textContent = `File: ${fileName}`;
+            playPauseButton.disabled = true;
+            analyzeButton.disabled = true;
+            trimButton.disabled = true;
+            resultsDashboard.style.display = 'none';
+            document.getElementById('revertButton').classList.add('hidden');
+
+            displayWaveform(currentAudioBlob, '#waveform', (ws) => {
+                wavesurfer = ws;
+            });
+        }
+
+        trimButton.onclick = async () => {
+            if (!currentAudioBlob) return;
+            const progressText = document.getElementById('progress-text');
+            progressText.textContent = "Detecting speech...";
+            const formData = new FormData();
+            formData.append("file", currentAudioBlob);
+
+            try {
+                const response = await fetch('/detect-speech', { method: 'POST', body: formData });
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Server error: ${response.statusText} - ${errorText}`);
+                }
+                const timestamps = await response.json();
+                
+                displayWaveform(currentAudioBlob, '#trim-waveform', (ws) => {
+                    trimWavesurfer = ws;
+                    trimWavesurfer.on('ready', () => {
+                         try {
+                            const regions = trimWavesurfer.plugins.find(p => p instanceof RegionsPlugin);
+                            if (!regions) {
+                                throw new Error("RegionsPlugin instance not found.");
+                            }
+                            regions.clearRegions();
+                            activeRegion = regions.addRegion({
+                                start: timestamps.start,
+                                end: timestamps.end,
+                                color: 'rgba(0, 100, 0, 0.1)',
+                                drag: true,
+                                resize: true,
+                            });
+                            trimModal.classList.add('active');
+                            progressText.textContent = "Adjust trim region and confirm.";
+                        } catch (innerError) {
+                            progressText.textContent = `Error in trim waveform ready handler: ${innerError.message}`;
+                            progressText.style.color = 'red';
+                        }
+                    });
+                });
+            } catch (error) {
+                progressText.textContent = "Error detecting speech: " + error.message;
+                progressText.style.color = 'red';
+            }
+        };
+
+        confirmAndAnalyze.onclick = async () => {
+            if (!currentAudioBlob || !activeRegion) return;
+            const { start, end } = activeRegion;
+            trimModal.classList.remove('active');
+
+            const progressText = document.getElementById('progress-text');
+            progressText.textContent = "Trimming audio...";
+
+            const formData = new FormData();
+            formData.append("file", currentAudioBlob);
+            formData.append("start_sec", start);
+            formData.append("end_sec", end);
+
+            try {
+                const response = await fetch('/trim', { method: 'POST', body: formData });
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Trimming failed: ${errorText}`);
+                }
+                const newBlob = await response.blob();
+                _updatePlayerUI(newBlob, "trimmed_audio.wav");
+                progressText.textContent = "Audio trimmed. Click Analyze to proceed.";
+                analyzeButton.disabled = false; // Enable analyze button after trimming
+                document.getElementById('revertButton').classList.remove('hidden'); // Show Revert button
+            } catch (error) {
+                progressText.textContent = error.message;
+                progressText.style.color = 'red';
+            }
+        };
+
+        function displayWaveform(blob, containerSelector, onReady) {
+            const container = document.querySelector(containerSelector);
+            if (containerSelector === '#waveform' && wavesurfer) {
+                wavesurfer.destroy();
+                wavesurfer = null;
+            }
+            if (containerSelector === '#trim-waveform' && trimWavesurfer) {
+                trimWavesurfer.destroy();
+                trimWavesurfer = null;
+            }
+
+            const wsInstance = WaveSurfer.create({
+                container: container,
+                waveColor: 'rgb(200, 200, 200)',
+                progressColor: 'rgb(100, 100, 100)',
+                height: containerSelector === '#waveform' ? 150 : 128,
+                plugins: [RegionsPlugin.create()]
+            });
+             wsInstance.on('error', (e) => {
+                console.error(e);
+                const progressText = document.getElementById('progress-text');
+                progressText.textContent = `Error loading waveform: ${e.message}. The audio file may be corrupted or in an unsupported format.`;
+                progressText.style.color = 'red';
+            });
+
+            wsInstance.on('ready', () => {
+                if (containerSelector === '#waveform') {
+                    analyzeButton.disabled = false;
+                    trimButton.disabled = false;
+                    playPauseButton.disabled = false;
+                }
+            });
+
+            wsInstance.load(URL.createObjectURL(blob));
+            if (onReady) onReady(wsInstance);
+        }
+
+        async function submitAudioData(file) {
+            const progressText = document.getElementById('progress-text');
+            const qcChecklist = document.getElementById('qc-checklist');
+            const qcList = document.getElementById('qc-list');
+            
+            progressText.style.color = 'var(--text-color)';
+            progressText.textContent = 'Starting analysis...';
+            results.innerText = 'Waiting for analysis...';
+            radarCharts.innerHTML = '';
+            acousticGauges.innerHTML = '';
+            resultsDashboard.style.display = 'none';
+            
+            qcChecklist.style.display = 'block';
+            qcList.querySelectorAll('li').forEach(li => li.className = 'pending');
+
+            const gender = document.querySelector('input[name="gender"]:checked').value;
+            const ignoreLimit = document.getElementById('ignoreLimit').checked;
+            const formData = new FormData();
+            formData.append("file", file, file.name);
+            formData.append("gender", gender);
+            formData.append("ignore_limit", ignoreLimit);
+
+            let errorOccurred = false;
+            try {
+                const response = await fetch('/analyze', { method: 'POST', body: formData });
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    buffer += decoder.decode(value, { stream: true });
+                    const messages = buffer.split('\n\n');
+                    buffer = messages.pop();
+
+                    for (const msg of messages) {
+                        if (!msg) continue;
+                        let dataLine, eventLine;
+                        msg.split('\n').forEach(line => {
+                            if (line.startsWith('event:')) eventLine = line.substring(6).trim();
+                            else if (line.startsWith('data:')) dataLine = line.substring(5).trim();
+                        });
+
+                        if (!dataLine) continue;
+                        const currentEvent = eventLine || 'message';
+                        
+                        if (currentEvent === 'done') {
+                            if (!errorOccurred) {
+                                progressText.textContent = 'Analysis complete.';
+                            }
+                            break;
+                        }
+
+                        const data = JSON.parse(dataLine);
+
+                        if (currentEvent === 'message' && data.status) {
+                            progressText.textContent = data.status;
+                        } else if (currentEvent === 'qc_step') {
+                            const li = document.getElementById(`qc-${data.check.replace(/\s/g, '-')}`);
+                            if (li) {
+                                li.className = data.status;
+                                progressText.textContent = `Quality Check: ${data.message}`;
+                            }
+                        } else if (currentEvent === 'error') {
+                            progressText.textContent = `Error: ${data.error}`;
+                            progressText.style.color = 'var(--danger-color)';
+                            errorOccurred = true;
+                        } else if (currentEvent === 'result') {
+                            progressText.textContent = 'Analysis Finished!';
+                            resultsDashboard.style.display = 'grid';
+                            results.innerText = JSON.stringify(data, null, 2);
+                            if (data.semantic_features && data.semantic_features.adjectives) plotRadarCharts(data.semantic_features.adjectives);
+                            if (data.acoustic_features) plotAcousticGauges(data.acoustic_features, data.gender);
+                            
+                            // A single, simple resize trigger after charts are displayed
+                            setTimeout(function() {
+                                const charts = document.querySelectorAll('.chart-container');
+                                charts.forEach(chart => {
+                                    if (chart.offsetParent !== null) {
+                                        Plotly.Plots.resize(chart);
+                                    }
+                                });
+                            }, 200);
+                        }
+                    }
+                }
+            } catch (error) {
+                if (!errorOccurred) {
+                    results.innerText = "Error: " + error;
+                    progressText.textContent = 'An error occurred during analysis.';
+                    progressText.style.color = 'var(--danger-color)';
+                }
+            }
+        }
+        
+        function plotAcousticGauges(features, gender) {
+            const container = document.getElementById('acousticGauges');
+            container.innerHTML = '';
+            
+            const paramsToPlot = {
+                'mean_F0_Hz': { range: [50, 300], title: 'Mean F0 (Hz)' },
+                'std_dev_F0_Hz': { max: 40, title: 'Std Dev F0 (Hz)'},
+                'jitter_local': { max: 2, title: 'Jitter (local, %)' },
+                'shimmer_local_db': { max: 0.7, title: 'Shimmer (local, dB)' },
+                'hnr_mean_dB': { range: [0, 40], title: 'HNR (dB)' },
+                'cpps_mean': { range: [0, 25], title: 'CPPS (dB)'},
+            };
+
+            for (const param in paramsToPlot) {
+                if (features[param] === undefined || features[param] === null) continue;
+
+                const chartDiv = document.createElement('div');
+                chartDiv.className = 'chart-container';
+                container.appendChild(chartDiv);
+
+                const norm = acousticNorms[param];
+                const value = features[param];
+                
+                let greenZone, redZone;
+                let normData;
+                let currentMin = paramsToPlot[param].range ? paramsToPlot[param].range[0] : 0;
+                let currentMax = paramsToPlot[param].range ? paramsToPlot[param].range[1] : paramsToPlot[param].max || 0;
+
+                if (norm.norms.general) normData = norm.norms.general;
+                else if (norm.norms.sustained_vowel) normData = norm.norms.sustained_vowel;
+                else if (norm.norms[gender]) normData = norm.norms[gender];
+                else continue; 
+
+                if (normData.min !== undefined) currentMin = Math.min(currentMin, normData.min);
+                if (normData.max !== undefined) currentMax = Math.max(currentMax, normData.max);
+                currentMin = Math.min(currentMin, value);
+                currentMax = Math.max(currentMax, value);
+
+                if (normData.max && normData.min) { 
+                    greenZone = [normData.min, normData.max];
+                    redZone = [currentMin, normData.min];
+                } else if (normData.max) { 
+                    greenZone = [currentMin, normData.max];
+                    redZone = [normData.max, currentMax];
+                } else { 
+                    greenZone = [normData.min, currentMax];
+                    redZone = [currentMin, normData.min];
+                }
+
+                const buffer = (currentMax - currentMin) * 0.1;
+                const plotRange = [currentMin - buffer, currentMax + buffer];
+                
+                let numberColor = 'black'; 
+                if (normData.min !== undefined && normData.max !== undefined) {
+                    numberColor = (value >= normData.min && value <= normData.max) ? 'green' : 'red';
+                } else if (normData.max !== undefined) { 
+                    numberColor = (value <= normData.max) ? 'green' : 'red';
+                } else if (normData.min !== undefined) { 
+                    numberColor = (value >= normData.min) ? 'green' : 'red';
+                }
+
+                const trace = {
+                    type: 'indicator', mode: 'gauge+number', value: value.toFixed(2),
+                    title: { text: norm.name || paramsToPlot[param].title, font: {size: 14} }, 
+                    number: { font: { color: numberColor, size: 24 } }, 
+                    gauge: {
+                        axis: { range: plotRange, tickwidth: 1, tickcolor: "darkblue" },
+                        bar: { color: 'rgba(0,0,0,0.6)' },
+                        bgcolor: "white",
+                        borderwidth: 2,
+                        bordercolor: "#ccc",
+                        steps: [
+                            { range: redZone, color: 'rgba(255, 0, 0, 0.1)' },
+                            { range: greenZone, color: 'rgba(0, 255, 0, 0.1)' }
+                        ],
+                    }
+                };
+                
+                Plotly.newPlot(chartDiv, [trace], {
+                    margin: { t: 40, b: 10, l: 40, r: 30 },
+                    height: 200
+                }, {responsive: true});
+            }
+        }
+                
+        function plotRadarCharts(scores) {
+            const container = document.getElementById('radarCharts');
+            container.innerHTML = '';
+            for (const group in adjectiveGroups) {
+                const adjectives = [...adjectiveGroups[group]]; 
+                const values = adjectives.map(adj => (scores[adj] || 0) + 2);
+                
+                adjectives.push(adjectives[0]);
+                values.push(values[0]);
+                
+                const chartDiv = document.createElement('div');
+                chartDiv.className = 'chart-container';
+                container.appendChild(chartDiv);
+                
+                const trace = { type: 'scatterpolar', r: values, theta: adjectives, fill: 'toself', mode: 'lines', name: 'Score' };
+                const zeroLineTrace = {
+                    type: 'scatterpolar', r: Array(adjectives.length).fill(2), theta: adjectives, mode: 'lines',
+                    line: { color: 'rgba(255, 0, 0, 0.5)', width: 2 }, fill: 'none', hoverinfo: 'none', showlegend: false
+                };
+                
+                Plotly.newPlot(chartDiv, [zeroLineTrace, trace], {
+                    polar: { radialaxis: { visible: true, range: [0, 4], tickvals: [0, 1, 2, 3, 4], ticktext: ['-2', '-1', '0', '1', '2']}},
+                    title: { text: group, font: {size: 16} },
+                    margin: { t: 60, b: 40, l: 60, r: 50 },
+                    height: 300
+                }, {responsive: true});
+            }
+        }    
+    </script>
+</body>
+</html>
