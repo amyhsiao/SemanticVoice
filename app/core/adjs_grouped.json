@@ -1,0 +1,88 @@
+{
+    "GRBAS (Aligned)": [
+        "Grade",
+        "Roughness",
+        "Breathiness",
+        "Asthenia",
+        "Strain",
+        "grade",
+        "roughness",
+        "breathiness",
+        "asthenia",
+        "strain"
+    ],
+    "Stability & Flow": [
+        "stable",
+        "consistent",
+        "trembling",
+        "unstable",
+        "shaky",
+        "fluctuating",
+        "quivering",
+        "variable",
+        "vibrating",
+        "fluent",
+        "halting",
+        "broken",
+        "stuttering",
+        "jerky",
+        "disrupted",
+        "choppy"
+    ],
+    "Roughness & Strain": [
+        "rough",
+        "hoarse",
+        "husky",
+        "harsh",
+        "raspy",
+        "grating",
+        "gravelly",
+        "creaky",
+        "cracked",
+        "gurgly",
+        "strained",
+        "pressed",
+        "tight",
+        "tense",
+        "breathy",
+        "airy"
+    ],
+    "Resonance": [
+        "resonant",
+        "deep",
+        "booming",
+        "nasal",
+        "denasal",
+        "echoey",
+        "damped",
+        "metallic",
+        "thin",
+        "flat",
+        "hollow",
+        "muffled",
+        "buzzing"
+    ],
+    "Pitch": [
+        "shrill",
+        "high-pitched",
+        "low-pitched",
+        "pitchy",
+        "monotone",
+        "sharp",
+        "intonated"
+    ],
+    "Loudness": [
+        "loud",
+        "strong",
+        "soft",
+        "faint",
+        "weak"
+    ],
+    "General Status": [
+        "clear",
+        "normal",
+        "mild",
+        "moderate",
+        "severe"
+    ]
+}

@@ -1,0 +1,63 @@
+{
+  "acoustic_norms": {
+    "mean_F0_Hz": {
+      "name": "Fundamental Frequency",
+      "unit": "Hz",
+      "norms": {
+        "male": { "min": 100, "max": 150 },
+        "female": { "min": 180, "max": 250 }
+      },
+      "interpretation": "Values outside these ranges may indicate pitch disorders or endocrine issues."
+    },
+    "std_dev_F0_Hz": {
+      "name": "Standard Deviation of F0",
+      "unit": "Hz",
+      "norms": {
+        "sustained_vowel": { "max": 6 },
+        "connected_speech": { "min": 20, "max": 35 }
+      },
+      "interpretation": "Measures pitch variability. Should be very low (<6Hz) for sustained vowels, but higher for natural speech."
+    },
+    "jitter_local": {
+      "name": "Jitter (Local)",
+      "unit": "%",
+      "norms": {
+        "general": { "max": 1.04 }
+      },
+      "interpretation": "Frequency instability. Values > 1.04% indicate roughness/hoarseness."
+    },
+    "shimmer_local_db": {
+      "name": "Shimmer (Local, dB)",
+      "unit": "dB",
+      "norms": {
+        "general": { "max": 0.35 }
+      },
+      "interpretation": "Amplitude instability. Values > 0.35 dB indicate breathiness."
+    },
+    "hnr_mean_dB": {
+      "name": "Harmonics-to-Noise Ratio",
+      "unit": "dB",
+      "norms": {
+        "general": { "min": 20 }
+      },
+      "interpretation": "Higher is better. Values < 20 dB suggest significant noise (dysphonia) in the signal."
+    },
+    "nhr_ratio": {
+      "name": "Noise-to-Harmonics Ratio",
+      "unit": "ratio",
+      "norms": {
+        "general": { "max": 0.19 }
+      },
+      "interpretation": "Lower is better. Values > 0.19 suggest significant noise."
+    },
+    "cpps_mean": {
+      "name": "Cepstral Peak Prominence Smoothed",
+      "unit": "dB",
+      "norms": {
+        "sustained_vowel": { "min": 14 },
+        "connected_speech": { "min": 9 }
+      },
+      "interpretation": "Higher is better. Values < 14 dB (vowel) correlate strongly with dysphonia severity."
+    }
+  }
+}
