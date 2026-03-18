@@ -60,6 +60,7 @@ A novel approach that aligns audio embeddings with medically precise text-based 
   # Ubuntu/Debian
   sudo apt-get install ffmpeg
   ```
+- download the fine-tuned model weights and locate it in the /models/ directory. (https://doi.org/10.6084/m9.figshare.31796917)
 
 ### Local Setup
 1. **Clone the repository:**
