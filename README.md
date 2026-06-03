@@ -18,6 +18,7 @@ The clinical audio datasets analyzed during this study are accessible through th
 ## Citation
 
 If you use this code or methodology in your work, please cite our paper:
+[preprint]: https://www.medrxiv.org/content/10.64898/2026.05.29.26354442v1
 
 >  placeholder
 > 
